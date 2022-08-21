@@ -47,22 +47,16 @@ https://www.kaggle.com/datasets/pyuxbhatt/maternal-health-risk
 | MLFlow | Experiment tracking and model registry. |
 | PostgreSQL | MLFLow experiment tracking database. |
 | MinIO | High Performance Object Storage compatible with Amazon S3 cloud storage service. |
+| MongoDB | Prediction database. |
 | EvidentlyAI | ML models evaluation and monitoring. |
-| MongoDB |  |
-| Prometheus |  |
-| Grafana |  |
-| Pytest | Python unit testing suite. |
-| Pylint |  |
-| Black |  |
-| Isort |  |
-| Pre-Commit Hooks |  |
-| GitHub Actions |  |
-
-
-## Acknowledgements
-
-1. Ahmed M., Kashem M.A., Rahman M., Khatun S. (2020) Review and Analysis of Risk Factor of Maternal Health in Remote Area Using the Internet of Things (IoT). In: Kasruddin Nasir A. et al. (eds) InECCE2019. Lecture Notes in Electrical Engineering, vol 632. Springer, Singapore. [Web Link]
-2. IoT based Risk Level Prediction Model for Maternal Health Care in the Context of Bangladesh, STI-2020, [under publication in IEEE]
+| Prometheus | Time Series Database for ML models real-time monitoring. |
+| Grafana | ML models real-time monitoring dashboards. |
+| pytest | Python unit testing suite. |
+| pylint | Python static code analysis. |
+| black | Python code formatting. |
+| isort | Python import sorting. |
+| Pre-Commit Hooks | Simple code issue identification before submission. |
+| GitHub Actions | CI/CD pipelines. |
 
 
 ## Disclaimer
