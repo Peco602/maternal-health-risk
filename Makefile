@@ -35,7 +35,7 @@ run: ## Run the MLOps pipeline environment
 	@docker-compose up -d
 
 generate-traffic: ## Generate simulated traffic
-	@python app/generate_traffic.py
+	@docker exec -t web-app python generate_traffic.py
 
 logs: ## Check the MLOps pipeline logs
 	@docker-compose logs -f
