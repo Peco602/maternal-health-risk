@@ -1,0 +1,48 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v3.2.0
+  hooks:
+    - id: trailing-whitespace
+    - id: end-of-file-fixer
+    - id: check-yaml
+    - id: check-added-large-files
+      args: ['--maxkb=1024']
+- repo: https://github.com/pycqa/isort
+  rev: 5.10.1
+  hooks:
+    - id: isort
+      name: isort (python)
+      exclude: ^monitoring/
+- repo: https://github.com/psf/black
+  rev: 22.6.0
+  hooks:
+    - id: black
+      name: black
+      language_version: python3.9
+      exclude: ^monitoring/
+- repo: local
+  hooks:
+    - id: pylint
+      name: pylint
+      entry: pylint
+      language: system
+      types: [python]
+      exclude: ^monitoring/
+      args: [
+        "-rn", # Only display messages
+        "-sn", # Don't display the score
+        "--recursive=y",
+      ]
+- repo: local
+  hooks:
+    - id: pytest-check
+      name: pytest-check
+      entry: pytest
+      language: system
+      pass_filenames: false
+      always_run: true
+      args: [
+        "app/tests/"
+      ]

@@ -1,0 +1,99 @@
+version: '3.9'
+
+services:
+  test-mlflow-db:
+    image: postgres:14.3
+    container_name: test-mlflow-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    expose:
+      - "5432"
+
+  test-minio:
+    image: minio/minio:RELEASE.2022-05-19T18-20-59Z
+    container_name: test-minio
+    command: server /data --console-address ":9001"
+    expose:
+      - "9000"
+      - "9001"
+    environment:
+      MINIO_SITE_REGION: ${AWS_DEFAULT_REGION}
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
+
+  test-createbuckets:
+    image: minio/mc
+    container_name: test-createbuckets
+    depends_on:
+      - test-minio
+    entrypoint: >
+      /bin/sh -c "
+      echo sleep 5;
+      sleep 5;
+      /usr/bin/mc config host add myminio http://test-minio:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      /usr/bin/mc mb myminio/${EXPERIMENT_NAME};
+      exit 0;
+      "
+
+  test-mlflow-server:
+    image: peco602/maternal-health-risk-predictor:latest
+    container_name: test-mlflow-server
+    environment:
+      AWS_REGION: ${AWS_REGION}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      MLFLOW_S3_ENDPOINT_URL: http://test-minio:9000
+    expose:
+      - "5000"
+    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@test-mlflow-db:5432/${POSTGRES_DB} --default-artifact-root s3://${EXPERIMENT_NAME}/test-mlflow
+    depends_on:
+      - test-mlflow-db
+      - test-minio
+
+  test-web-app:
+    image: peco602/maternal-health-risk-predictor:latest
+    container_name: test-web-app
+    environment:
+      AWS_REGION: ${AWS_REGION}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      INTEGRATION_TEST_RUN: "True"
+      MLFLOW_ENABLED: "True"
+      MLFLOW_TRACKING_URI: http://test-mlflow-server:5000
+      DEFAULT_MODEL_ENABLED: "False"
+      MLFLOW_S3_ENDPOINT_URL: http://test-minio:9000
+      EXPERIMENT_NAME: ${EXPERIMENT_NAME}
+      MIN_AGE: ${MIN_AGE}
+      MAX_AGE: ${MAX_AGE}
+    command: "gunicorn --bind=0.0.0.0:8081 predict:app"
+    expose:
+      - "8081"
+    ports:
+      - "127.0.0.1:8082:8081"
+    depends_on:
+      - test-mlflow-server
+    restart: on-failure
+
+  test-prefect:
+    image: peco602/maternal-health-risk-predictor:latest
+    container_name: test-prefect
+    environment:
+      EXPERIMENT_NAME: ${EXPERIMENT_NAME}
+      AWS_REGION: ${AWS_REGION}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      MODEL_SEARCH_ITERATIONS: "1"
+      MLFLOW_S3_ENDPOINT_URL: http://test-minio:9000
+      MLFLOW_TRACKING_URI: http://test-mlflow-server:5000
+    command: "prefect orion start --host=0.0.0.0"
+    volumes:
+      - ./data:/app/data
+    expose:
+      - "4200"
+    depends_on:
+      - test-mlflow-server

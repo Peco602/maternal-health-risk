@@ -1,0 +1,35 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+mlflow = "*"
+scikit-learn = "*"
+pandas = "*"
+xgboost = "*"
+hyperopt = "*"
+matplotlib = "*"
+numpy = "*"
+flask = "*"
+gunicorn = "*"
+psycopg2-binary = "*"
+pymongo = "*"
+prefect = ">=2.0b6"
+boto3 = "*"
+s3fs = "*"
+kaggle = "*"
+
+[dev-packages]
+notebook = "*"
+pytest = "*"
+isort = "*"
+black = "*"
+pylint = "*"
+pre-commit = "*"
+deepdiff = "*"
+mistune = ">=2.0.3"
+requests = "*"
+
+[requires]
+python_version = "3.9"

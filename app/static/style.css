@@ -1,0 +1,30 @@
+html {
+	width: 100%;
+	height:100%;
+	overflow: auto;
+}
+
+body {
+	color: #FFF;
+	text-align: center;
+	font-weight: bold;
+	background-image: url('/static/wallpaper.jpg');
+	background-size: auto;
+	background-repeat: no-repeat;
+}
+
+form {
+	color: #000000;
+	text-align: left;
+	background-color: #FFFFFF;
+}
+
+.btn-predict {
+	font-weight: bold;
+	background-color: #aa5eb9;
+	border-color: #731985;
+}
+
+.alert {
+	text-align: center;
+}
