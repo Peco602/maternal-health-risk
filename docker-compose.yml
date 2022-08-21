@@ -1,0 +1,190 @@
+version: '3.9'
+
+volumes:
+  s3-data: {}
+  mlflow-db-data: {}
+  mongo-data: {}
+  prometheus-data: {}
+  grafana-data: {}
+
+services:
+  mlflow-db:
+    image: postgres:14.3
+    container_name: mlflow-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    expose:
+      - "5432"
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - "mlflow-db-data:/var/lib/postgresql/"
+
+  minio:
+    image: minio/minio:RELEASE.2022-05-19T18-20-59Z
+    container_name: minio
+    command: server /data --console-address ":9001"
+    expose:
+      - "9000"
+      - "9001"
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - "s3-data:/data"
+    environment:
+      MINIO_SITE_REGION: ${AWS_DEFAULT_REGION}
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
+
+  createbuckets:
+    image: minio/mc
+    container_name: createbuckets
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      echo sleep 15;
+      sleep 15;
+      /usr/bin/mc config host add myminio http://minio:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      /usr/bin/mc mb myminio/${EXPERIMENT_NAME};
+      exit 0;
+      "
+
+  mlflow-server:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: peco602/maternal-health-risk-predictor:latest
+    container_name: mlflow-server
+    environment:
+      AWS_REGION: ${AWS_REGION}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+    expose:
+      - "5000"
+    ports:
+      - "127.0.0.1:5000:5000"
+    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@mlflow-db:5432/${POSTGRES_DB} --default-artifact-root s3://${EXPERIMENT_NAME}/mlflow
+    depends_on:
+      - mlflow-db
+      - minio
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./monitoring/config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "127.0.0.1:9090:9090"
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    user: "472"
+    depends_on:
+      - prometheus
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./monitoring/config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+      - ./monitoring/config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./monitoring/dashboards:/opt/grafana/dashboards
+      - grafana-data:/var/lib/grafana
+    restart: always
+
+  evidently-service:
+    build:
+      context: monitoring
+      dockerfile: Dockerfile
+    image: peco602/maternal-health-risk-monitoring-service:latest
+    container_name: evidently-service
+    environment:
+      MONGODB_URI: "mongodb://mongo:27017"
+      EXPERIMENT_NAME: ${EXPERIMENT_NAME}
+      MIN_AGE: ${MIN_AGE}
+      MAX_AGE: ${MAX_AGE}
+    depends_on:
+      - grafana
+    volumes:
+      - ./data:/app/datasets
+      - ./monitoring/config.yaml:/app/config.yaml
+    ports:
+      - "127.0.0.1:8085:8085"
+
+  web-app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: peco602/maternal-health-risk-predictor:latest
+    container_name: web-app
+    environment:
+      AWS_REGION: ${AWS_REGION}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      MLFLOW_ENABLED: "True"
+      MLFLOW_TRACKING_URI: http://mlflow-server:5000
+      DEFAULT_MODEL_ENABLED: ${DEFAULT_MODEL_ENABLED}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      MONITORING_ENABLED: "True"
+      EVIDENTLY_SERVICE_URI: http://evidently-service:8085
+      MONGODB_URI: "mongodb://mongo:27017"
+      EXPERIMENT_NAME: ${EXPERIMENT_NAME}
+      MIN_AGE: ${MIN_AGE}
+      MAX_AGE: ${MAX_AGE}
+    command: "gunicorn --bind=0.0.0.0:8081 predict:app"
+    expose:
+      - "8081"
+    ports:
+      - "80:8081"
+    depends_on:
+      - mlflow-server
+      - evidently-service
+      - mongo
+    restart: on-failure
+
+  prefect:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: peco602/maternal-health-risk-predictor:latest
+    container_name: prefect
+    environment:
+      KAGGLE_USERNAME: ${KAGGLE_USERNAME}
+      KAGGLE_KEY: ${KAGGLE_KEY}
+      EXPERIMENT_NAME: ${EXPERIMENT_NAME}
+      AWS_REGION: ${AWS_REGION}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      MLFLOW_TRACKING_URI: http://mlflow-server:5000
+      MODEL_SEARCH_ITERATIONS: ${MODEL_SEARCH_ITERATIONS}
+    command: "prefect orion start --host=0.0.0.0"
+    volumes:
+      - ./data:/app/data
+    expose:
+      - "4200"
+    ports:
+      - "127.0.0.1:4200:4200"
+    depends_on:
+      - mlflow-server
+    restart: on-failure

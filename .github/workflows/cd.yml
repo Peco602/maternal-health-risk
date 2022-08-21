@@ -1,0 +1,36 @@
+name: Continuous Deployment
+on:
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    branches: [main]
+    types:
+      - completed
+
+env:
+  DEPLOY_HOST: ${{secrets.DEPLOY_HOST}}
+  DEPLOY_USERNAME: ${{secrets.DEPLOY_USERNAME}}
+  DEPLOY_KEY: ${{secrets.DEPLOY_KEY}}
+  DEPLOY_PORT: ${{secrets.DEPLOY_PORT}}
+  DEPLOY_PATH: ${{secrets.DEPLOY_PATH}}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Updated MLOps pipeline deployment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USERNAME }}
+          key: ${{ env.DEPLOY_KEY }}
+          port: ${{ env.DEPLOY_PORT }}
+          script: |
+            cd ${{ env.DEPLOY_PATH }}
+            git pull https://${{ secrets.PULL_TOKEN }}@github.com/Peco602/maternal-health-risk.git HEAD:main
+            make pull
+            make kill
+            sleep 5
+            make run
+            sleep 30
+            make deployment

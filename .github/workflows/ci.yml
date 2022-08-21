@@ -1,0 +1,46 @@
+name: Continuous Integration
+on:
+  push:
+    branches:
+      - 'main'
+      - 'dev'
+
+env:
+  DOCKERHUB_USERNAME: ${{secrets.DOCKERHUB_USERNAME}}
+  DOCKERHUB_PASSWORD: ${{secrets.DOCKERHUB_PASSWORD}}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        working-directory: "app"
+        run: pip install pipenv && pipenv install --dev --system --deploy
+
+      - name: Run unit tests
+        run: make unit-tests
+
+      - name: Run quality checks
+        run: make quality-checks
+
+      - name: Build
+        run: make build
+
+      - name: Run integration tests
+        run: make integration-tests
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+            username: ${{ env.DOCKERHUB_USERNAME }}
+            password: ${{ env.DOCKERHUB_PASSWORD }}
+
+      - name: Push to Docker Hub
+        run : docker-compose push
