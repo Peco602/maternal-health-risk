@@ -28,10 +28,13 @@ The dataset used to feed the MLOps pipeline has been downloaded from [Kaggle](ht
 | BodyTemp | Average human body temperature. |
 | Risk Level | Predicted Risk Intensity Level during pregnancy considering the previous attribute. |
 
-PasswordGiovanni123.
+
 ## MLOps pipeline
 
 ### Architecture
+
+<img src="images/architecture.png" width="100%"/>
+
 
 ### Deployment
 
