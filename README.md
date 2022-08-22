@@ -2,9 +2,9 @@
 
 ## Objective
 
-This repository represents the final project for the [MLOps Zoomcamp](https://github.com/DataTalksClub/mlops-zoomcamp) course provided by [DataTalks.Club](https://datatalks.club/). The goal of this project is to apply what has been learned during the course to build a MLOps pipeline for woman health risk prediction during pregnancy.
+This repository contains the final project for the [MLOps Zoomcamp](https://github.com/DataTalksClub/mlops-zoomcamp) course provided by [DataTalks.Club](https://datatalks.club/). The goal of this project is to apply what has been learned during the course to build a MLOps pipeline for woman health risk prediction during pregnancy.
 
-The developed maternal health risk prediction service is currently publicly available [here](http://maternal.peco602.com).
+The developed prediction service is currently publicly available [here](http://maternal.peco602.com).
 
 
 ## Context
@@ -14,20 +14,19 @@ According to the World Health Organization (WHO):
 "*Maternal health refers to the health of women during pregnancy, childbirth and the post-natal period. Each stage should be a positive experience, ensuring women and their babies reach their full potential for health and well-being. Although important progress has been made in the last two decades, about 295 000 women died during and following pregnancy and childbirth in 2017. This number is unacceptably high. The most common direct causes of maternal injury and death are excessive blood loss, infection, high blood pressure, unsafe abortion, and obstructed labour, as well as indirect causes such as anemia, malaria, and heart disease. Most maternal deaths are preventable with timely management by a skilled health professional working in a supportive environment. Ending preventable maternal death must remain at the top of the global agenda. At the same time, simply surviving pregnancy and childbirth can never be the marker of successful maternal health care. It is critical to expand efforts reducing maternal injury and disability to promote health and well-being. Every pregnancy and birth is unique. Addressing inequalities that affect health outcomes, especially sexual and reproductive health and rights and gender, is fundamental to ensuring all women have access to respectful and high-quality maternity care.*"
 
 
-
 ## Dataset
 
-The dataset used to feed the MLOps pipeline has been downloaded from [Kaggle](https://www.kaggle.com/datasets/pyuxbhatt/maternal-health-risk) and contains data collected from different hospitals, community clinics and maternal health cares through an IoT-based risk monitoring system. The provided dataset is updated daily and is characterized by the following features:
+The dataset used to feed the MLOps pipeline has been downloaded from [Kaggle](https://www.kaggle.com/datasets/pyuxbhatt/maternal-health-risk) and contains data collected from several hospitals, community clinics and maternal health cares through an IoT-based risk monitoring system. The dataset is updated daily and is characterized by the following features:
 
 | Feature | Description |
 | --- | --- |
-| Age | Age in years when a woman is pregnant. |
-| SystolicBP | Upper value of Blood Pressure in mmHg. |
-| DiastolicBP | Lower value of Blood Pressure in mmHg. |
-| BS | Blood glucose levels is in terms of a molar concentration in mmol/L. |
-| HeartRate | A normal resting heart rate in beats per minute. |
+| Age | Age when a woman is pregnant. |
+| SystolicBP | Upper value of blood pressure. |
+| DiastolicBP | Lower value of blood pressure. |
+| BS | Blood glucose levels in terms of molar concentration. |
+| HeartRate | A normal resting heart rate. |
 | BodyTemp | Average human body temperature. |
-| Risk Level | Predicted Risk Intensity Level during pregnancy considering the previous attribute. |
+| Risk Level | Predicted risk intensity level during pregnancy considering the previous attributes. |
 
 
 ## MLOps pipeline
@@ -39,7 +38,7 @@ The dataset used to feed the MLOps pipeline has been downloaded from [Kaggle](ht
 
 ### Deployment
 
-The pipeline can be deployed via the following steps:
+The MLOps pipeline is fully dockerised and can be easily deployed via the following steps:
 
 1. Clone the `maternal-health-risk` repository locally:
 
@@ -47,7 +46,7 @@ The pipeline can be deployed via the following steps:
     $ git clone https://github.com/Peco602/maternal-health-risk.git
     ```
 
-2. Install all the pre-requisites necessary to run the pipeline:
+2. Install the pre-requisites necessary to run the pipeline:
 
     ```bash
     $ cd maternal-health-risk
@@ -98,12 +97,15 @@ The pipeline can be deployed via the following steps:
 
     | Service | Port | Interface | Description |
     | --- | --- | --- | --- |
-    | Web Application | 80 | 0.0.0.0 | Prediction web service |
+    | Web Application | 80 | 0.0.0.0 | Prediction web service (see picture below) |
     | Prefect | 4200 | 127.0.0.1 | Training workflow orchestration |
     | MLFlow | 5000 | 127.0.0.1 | Experiment tracking and model registry |
     | MinIO | 9001 | 127.0.0.1 | S3-equivalent bucket management |
     | Evidently | 8085 | 127.0.0.1 | Data and target drift report generation (`/dashboard` route)|
     | Grafana | 3000 | 127.0.0.1 | Data and target drift real-time dashboards |
+
+
+<img src="images/webservice.png" width="100%"/>
 
 
 ### Training
