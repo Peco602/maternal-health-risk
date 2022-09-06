@@ -13,8 +13,6 @@ According to the World Health Organization (WHO):
 
 The goal of the project is to apply what has been learned during the MLOps Zoomcamp course to build a MLOps pipeline for woman health risk prediction during pregnancy. 
 
-The developed prediction service is currently publicly available [here](http://maternal.peco602.com).
-
 
 ## Dataset
 
